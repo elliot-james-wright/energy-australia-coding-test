@@ -12,13 +12,13 @@ def getData():
     returns the unformated data from the API.
     '''
     f = requests.get("https://eacp.energyaustralia.com.au/codingtest/api/v1/festivals")
+
+    # check for errors
     if str(f.status_code) == "200":
         if len(str(f.text)) < 4:
             print("API returned empty string")
             print("Try again later")
             exit(0)
-        else:
-            return json.loads(f.text)
     elif str(f.status_code) == "429":
         print("API returned error: Too Many Requests")
         print("Try again later")
@@ -29,6 +29,9 @@ def getData():
         print("Error message: " + str(f.text))
         exit(0)
 
+    # if everything is successful then return the data
+    # format the data from a json string to a python list
+    return json.loads(f.text)
 
 def binarySearch(itemList, name, nested):
     '''
@@ -49,11 +52,15 @@ def binarySearch(itemList, name, nested):
     mid = (start+stop)//2
     # Each loop halves the size of the list we are searching to make sure there are log(N) loops
     while start < stop:
+        # check to see if we are looking through items that are themselves lists
         if nested:
             item = itemList[mid][0].lower()
         else:
             item = itemList[mid].lower()
 
+        # if the item we are looking for is smaller than the mid point then reduce
+        # the end range of our search, if the item is larger than the mid point then
+        # increase the start point of our search
         if name < item:
             stop = min(mid, stop-1)
             mid = (start+stop)//2
@@ -83,20 +90,25 @@ def sortData(data):
             bName = band.get('name', '')
 
             if rName != "" and bName != "":
-                # Find the position of the band in our new list
+                # Find the position of this items record in our records list
                 rIndex = binarySearch(records, rName, True)
                 if rIndex < len(records) and records[rIndex][0] == rName:
+                    # Find the position of this items band in this records band list
                     bIndex = binarySearch(records[rIndex][1], bName, True)
                     if bIndex < len(records[rIndex][1]) and records[rIndex][1][bIndex][0] == bName:
+                        # Find where the festival should be inserted into in this bands festival list
                         fIndex = binarySearch(records[rIndex][1][bIndex][1], fName, False)
                         records[rIndex][1][bIndex][1].insert(fIndex, fName)
                     else:
+                        # We have a new band so we insert into the records band list
                         newBand = [bName, [fName]]
                         records[rIndex][1].insert(bIndex, newBand)
                 else:
                     if len(records) == 0:
+                        # This is our first record
                         records = [[rName, [[bName, [fName]]]]]
                     else:
+                        # This is a new record and so we insert it into our records list
                         newRecord = [rName, [[bName, [fName]]]]
                         records.insert(rIndex, newRecord)
     return records
